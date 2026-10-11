@@ -1,0 +1,47 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ka
+      POSTGRES_PASSWORD: ka-dev-only   # лише для локальної розробки
+      POSTGRES_DB: ka
+    ports:
+      - "127.0.0.1:5432:5432"          # назовні не відкриваємо
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ka -d ka"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:                               # S3-сумісне сховище, лише для локальної розробки
+    # офіційні образи MinIO більше не публікуються в Docker Hub; цей образ застарілий
+    # (bitnamilegacy) і не оновлюється: у production тут справжній S3
+    image: bitnamilegacy/minio:latest
+    environment:
+      MINIO_ROOT_USER: ka-dev
+      MINIO_ROOT_PASSWORD: ka-dev-only-secret
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - miniodata:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
+  miniodata:
